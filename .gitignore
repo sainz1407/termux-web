@@ -1,0 +1,22 @@
+# Compiled binaries
+monitor
+monitor.exe
+
+# Python
+status.py
+web_status.py
+requirements.txt
+__pycache__/
+*.pyc
+.venv/
+
+# Node.js
+server.js
+package.json
+package-lock.json
+node_modules/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp

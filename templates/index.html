@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Termux Monitor</title>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   MODERN DASHBOARD – Glass / Gradient / Smooth
+   ══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f19;
+  --bg2:#111827;
+  --bg3:#1f2937;
+  --card:#1e293b;
+  --card-hover:#263347;
+  --border:rgba(99,130,255,.12);
+  --border2:rgba(99,130,255,.22);
+  --fg:#e2e8f0;
+  --fg2:#94a3b8;
+  --dim:#475569;
+  --accent:#6366f1;
+  --accent2:#818cf8;
+  --cyan:#22d3ee;
+  --green:#34d399;
+  --yellow:#fbbf24;
+  --red:#f87171;
+  --blue:#60a5fa;
+  --pink:#f472b6;
+  --orange:#fb923c;
+  --glass:rgba(30,41,59,.65);
+  --glass-border:rgba(148,163,184,.08);
+  --shadow:0 4px 24px rgba(0,0,0,.35);
+  --radius:14px;
+  --sidebar-w:68px;
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{
+  font-family:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 10% 0%,rgba(99,102,241,.08),transparent),
+    radial-gradient(ellipse 60% 50% at 90% 100%,rgba(34,211,238,.06),transparent);
+}
+
+/* ── Layout ────────────────────────────── */
+.wrap{display:flex;min-height:100vh}
+
+/* ── Sidebar ───────────────────────────── */
+.side{
+  width:var(--sidebar-w);background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px 0 12px;gap:4px;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+  backdrop-filter:blur(12px);
+}
+.side .logo{
+  font-size:1.4rem;margin-bottom:12px;
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(99,102,241,.3);
+}
+.side .tab{
+  width:44px;height:44px;border:none;border-radius:12px;
+  background:transparent;color:var(--dim);font-size:1.2rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s ease;position:relative;
+}
+.side .tab:hover{background:var(--bg3);color:var(--fg2)}
+.side .tab.on{
+  background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(34,211,238,.1));
+  color:var(--accent2);box-shadow:inset 0 0 0 1px var(--border2);
+}
+.side .tab.on::before{
+  content:'';position:absolute;left:-1px;top:25%;height:50%;width:3px;
+  border-radius:0 3px 3px 0;background:var(--accent);
+}
+.side .tab .tip{
+  display:none;position:absolute;left:56px;background:var(--bg3);
+  color:var(--fg);padding:5px 10px;border-radius:8px;font-size:.75rem;
+  white-space:nowrap;box-shadow:var(--shadow);pointer-events:none;z-index:200;
+  border:1px solid var(--border);
+}
+.side .tab:hover .tip{display:block}
+.side .divider{width:28px;height:1px;background:var(--border);margin:6px 0}
+.side .bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px}
+
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* ── Top Bar ───────────────────────────── */
+.topbar{
+  padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+  background:rgba(17,24,39,.6);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:50;
+}
+.topbar .brand{font-size:1.05rem;font-weight:700;color:var(--fg);display:flex;align-items:center;gap:8px}
+.topbar .brand span{
+  background:linear-gradient(135deg,var(--accent2),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.topbar .pills{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.topbar .pill{
+  display:flex;align-items:center;gap:5px;font-size:.8rem;color:var(--fg2);
+  background:var(--bg3);padding:4px 10px;border-radius:8px;border:1px solid var(--border);
+}
+.topbar .pill b{color:var(--fg);font-weight:600}
+
+/* ── Body / Pages ──────────────────────── */
+.body{padding:16px 20px;max-width:1200px}
+.page{display:none;animation:fadeIn .3s ease}
+.page.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Card ──────────────────────────────── */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow);
+  transition:border-color .2s,transform .15s;
+}
+.card:hover{border-color:var(--border2)}
+.card-head{
+  padding:12px 16px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);font-weight:600;font-size:.9rem;
+  background:rgba(31,41,55,.5);
+}
+.card-head .icon{
+  width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.card-head .icon svg{width:16px;height:16px}
+.card-body{padding:14px 16px}
+
+/* ── SVG Icon base ─────────────────────── */
+svg.i{width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;vertical-align:middle}
+.side .tab svg.i{width:20px;height:20px}
+.logo svg.i{width:22px;height:22px;stroke:#fff}
+.row .lbl svg.i{width:14px;height:14px;opacity:.7}
+.flist .ficon svg.i{width:18px;height:18px}
+
+/* Icon backgrounds */
+.ic-cpu{background:linear-gradient(135deg,#6366f1,#818cf8)}
+.ic-mem{background:linear-gradient(135deg,#8b5cf6,#a78bfa)}
+.ic-stor{background:linear-gradient(135deg,#3b82f6,#60a5fa)}
+.ic-bat{background:linear-gradient(135deg,#10b981,#34d399)}
+.ic-net{background:linear-gradient(135deg,#06b6d4,#22d3ee)}
+.ic-proc{background:linear-gradient(135deg,#f59e0b,#fbbf24)}
+.ic-dev{background:linear-gradient(135deg,#ec4899,#f472b6)}
+.ic-file{background:linear-gradient(135deg,#8b5cf6,#c084fc)}
+
+/* ── Grids ─────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(min-width:768px){.g4{grid-template-columns:repeat(4,1fr)}}
+
+/* ── Stat Cards (overview) ─────────────── */
+.stat{text-align:center;padding:4px 0}
+.stat .num{font-size:2rem;font-weight:800;line-height:1.2}
+.stat .label{font-size:.75rem;color:var(--fg2);margin-top:2px}
+
+/* ── Modern Progress Bar ───────────────── */
+.progress{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;border-radius:99px;transition:width .6s ease;min-width:0}
+.pf-green{background:linear-gradient(90deg,#10b981,#34d399)}
+.pf-yellow{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.pf-red{background:linear-gradient(90deg,#ef4444,#f87171)}
+.pf-blue{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.pf-purple{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+.pf-cyan{background:linear-gradient(90deg,#06b6d4,#22d3ee)}
+
+/* ── Row (key:value) ───────────────────── */
+.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:.88rem}
+.row+.row{border-top:1px solid rgba(148,163,184,.06)}
+.row .lbl{color:var(--fg2);display:flex;align-items:center;gap:6px}
+.row .val{color:var(--fg);font-weight:600;text-align:right;max-width:60%;word-break:break-all}
+
+/* ── Table ─────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.tbl th{text-align:left;color:var(--fg2);padding:8px 12px;font-weight:600;font-size:.75rem;
+  text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.tbl td{padding:8px 12px;border-bottom:1px solid rgba(148,163,184,.04)}
+.tbl tr:hover td{background:rgba(99,102,241,.04)}
+.ar{text-align:right}
+
+/* ── Core Grid ─────────────────────────── */
+.cores{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.core-item{background:var(--bg);border-radius:10px;padding:10px 12px;border:1px solid var(--border)}
+.core-item .ci-head{display:flex;justify-content:space-between;font-size:.78rem;color:var(--fg2);margin-bottom:4px}
+.core-item .ci-pct{font-weight:700;color:var(--fg)}
+
+/* ── Speed Cards ───────────────────────── */
+.speed-card{text-align:center;padding:8px 0}
+.speed-card .speed-num{font-size:1.5rem;font-weight:800;line-height:1.3}
+.speed-card .speed-lbl{font-size:.75rem;color:var(--fg2);margin-top:2px}
+
+/* ── File Explorer ─────────────────────── */
+.fpath{
+  color:var(--cyan);font-size:.82rem;word-break:break-all;
+  font-family:'Fira Code','Cascadia Code',monospace;
+  background:var(--bg);border-radius:8px;padding:8px 12px;border:1px solid var(--border);
+  flex:1;min-width:0;
+}
+.fe-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.fe-btn{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
+  border-radius:8px;background:var(--bg3);color:var(--fg2);
+  border:1px solid var(--border);font-size:.8rem;cursor:pointer;
+  transition:background .15s,color .15s;white-space:nowrap;flex-shrink:0;
+}
+.fe-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.fe-status{
+  padding:6px 12px;border-radius:8px;font-size:.8rem;margin-bottom:8px;
+  display:none;
+}
+.fe-status.uploading{display:block;background:rgba(96,165,250,.15);color:var(--blue)}
+.fe-status.ok{display:block;background:rgba(52,211,153,.15);color:var(--green)}
+.fe-status.err{display:block;background:rgba(248,113,113,.15);color:var(--red)}
+.flist{list-style:none;max-height:55vh;overflow-y:auto}
+.flist li{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
+  cursor:pointer;font-size:.85rem;transition:background .15s;
+}
+.flist li.is-file:hover .fsz{color:var(--blue)}
+.flist li:hover{background:var(--bg3)}
+.flist .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flist .fsz{color:var(--dim);font-size:.78rem;flex-shrink:0}
+.flist .ficon{font-size:1.1rem;flex-shrink:0}
+
+/* ── Badge ─────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+  border-radius:6px;font-size:.72rem;font-weight:600;
+}
+.badge-green{background:rgba(52,211,153,.12);color:var(--green)}
+.badge-yellow{background:rgba(251,191,36,.12);color:var(--yellow)}
+.badge-red{background:rgba(248,113,113,.12);color:var(--red)}
+.badge-blue{background:rgba(96,165,250,.12);color:var(--blue)}
+
+/* ── Pulse dot ─────────────────────────── */
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);
+  animation:pulse 2s infinite;margin-right:6px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Responsive ────────────────────────── */
+@media(max-width:640px){
+  :root{--sidebar-w:52px}
+  .side .logo{width:36px;height:36px;font-size:1.1rem;border-radius:10px}
+  .side .tab{width:38px;height:38px;font-size:1.05rem}
+  .main{margin-left:var(--sidebar-w)}
+  .topbar{padding:10px 12px;gap:8px}
+  .body{padding:10px 12px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .stat .num{font-size:1.5rem}
+  .topbar .pills{gap:6px}
+  .topbar .pill{font-size:.7rem;padding:3px 7px}
+  .card-body{padding:12px}
+}
+@media(max-width:380px){
+  :root{--sidebar-w:46px}
+  .side .tab{width:34px;height:34px;font-size:.95rem}
+}
+
+/* ── Search input ──────────────────────── */
+.search-box{
+  display:flex;gap:8px;margin-bottom:14px;
+}
+.search-box input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  color:var(--fg);padding:10px 14px;font-size:.88rem;font-family:inherit;
+  outline:none;transition:border-color .2s;
+}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--dim)}
+.search-box button{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:10px;color:#fff;padding:10px 18px;font-size:.85rem;
+  cursor:pointer;font-weight:600;white-space:nowrap;transition:opacity .2s;
+}
+.search-box button:hover{opacity:.85}
+.search-info{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:10px;font-size:.82rem;color:var(--fg2);
+}
+.search-info .tag{
+  background:var(--bg3);padding:3px 10px;border-radius:6px;
+  border:1px solid var(--border);font-size:.78rem;
+}
+/* ── Cmdline cell ──────────────────────── */
+.cmd-cell{
+  font-family:'Fira Code','Cascadia Code',monospace;font-size:.72rem;
+  color:var(--fg2);max-width:350px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;padding-top:2px;
+}
+.cmd-cell:hover{white-space:normal;word-break:break-all}
+.runtime-badge{
+  display:inline-flex;align-items:center;gap:3px;padding:2px 7px;
+  border-radius:5px;font-size:.68rem;font-weight:600;
+  background:rgba(99,102,241,.1);color:var(--accent2);
+}
+.quick-filter{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--fg2);padding:5px 10px;font-size:.78rem;cursor:pointer;
+  transition:all .15s;font-family:inherit;
+}
+.quick-filter:hover{background:var(--bg3);color:var(--fg);border-color:var(--border2)}
+
+/* ── Scrollbar ─────────────────────────── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════ Sidebar ═══════ -->
+<nav class="side">
+  <div class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+  <button class="tab on" data-t="overview" title="Overview"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="tip">Overview</span></button>
+  <button class="tab" data-t="cpu" title="CPU"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg><span class="tip">CPU</span></button>
+  <button class="tab" data-t="memory" title="Memory"><svg class="i" viewBox="0 0 24 24"><path d="M6 19v-9a6 6 0 1 1 12 0v9"/><path d="M6 19h12"/><path d="M12 10v3"/></svg><span class="tip">Memory</span></button>
+  <button class="tab" data-t="storage" title="Storage"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span class="tip">Storage</span></button>
+  <div class="divider"></div>
+  <button class="tab" data-t="battery" title="Battery"><svg class="i" viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2"/><path d="M23 13v-2"/><path d="M7 12h4M9 10v4"/></svg><span class="tip">Battery</span></button>
+  <button class="tab" data-t="network" title="Network"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg><span class="tip">Network</span></button>
+  <button class="tab" data-t="processes" title="Processes"><svg class="i" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tip">Processes</span></button>
+</nav>
+
+<!-- ═══════ Main Content ═══════ -->
+<div class="main">
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="brand"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--accent2)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> <span>Termux Monitor</span></div>
+  <div class="pills">
+    <div class="pill"><span class="pulse"></span>Live</div>
+    <div class="pill"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> <b id="h-date">—</b></div>
+    <div class="pill"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> <b id="h-time">—</b></div>
+    <div class="pill"><svg class="i" viewBox="0 0 24 24" style="width:12px;height:12px"><circle cx="12" cy="12" r="10"/><path d="M10 2h4M12 14V6"/></svg> <b id="h-up">—</b></div>
+  </div>
+</div>
+
+<div class="body">
+
+<!-- ════════ OVERVIEW ════════ -->
+<div id="p-overview" class="page on">
+
+  <!-- 4 stat cards -->
+  <div class="g4">
+    <div class="card">
+      <div class="card-head"><div class="icon ic-cpu"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div>CPU</div>
+      <div class="card-body stat">
+        <div class="num" style="color:var(--accent2)"><span id="o-cpu">0</span><span style="font-size:.9rem;font-weight:400">%</span></div>
+        <div class="progress"><div class="progress-fill pf-blue" id="o-cpu-bar" style="width:0%"></div></div>
+        <div class="label" id="o-cpu-info">— cores</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon ic-mem"><svg class="i" viewBox="0 0 24 24"><path d="M6 19v-9a6 6 0 1 1 12 0v9"/><path d="M6 19h12"/><path d="M12 10v3"/></svg></div>Memory</div>
+      <div class="card-body stat">
+        <div class="num" style="color:var(--accent2)"><span id="o-mem">0</span><span style="font-size:.9rem;font-weight:400">%</span></div>
+        <div class="progress"><div class="progress-fill pf-purple" id="o-mem-bar" style="width:0%"></div></div>
+        <div class="label" id="o-mem-info">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon ic-stor"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>Storage</div>
+      <div class="card-body stat">
+        <div class="num" style="color:var(--blue)"><span id="o-stor">0</span><span style="font-size:.9rem;font-weight:400">%</span></div>
+        <div class="progress"><div class="progress-fill pf-cyan" id="o-stor-bar" style="width:0%"></div></div>
+        <div class="label" id="o-stor-info">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon ic-bat"><svg class="i" viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2"/><path d="M23 13v-2"/><path d="M7 12h4M9 10v4"/></svg></div>Battery</div>
+      <div class="card-body stat">
+        <div class="num" style="color:var(--green)"><span id="o-bat">0</span><span style="font-size:.9rem;font-weight:400">%</span></div>
+        <div class="progress"><div class="progress-fill pf-green" id="o-bat-bar" style="width:0%"></div></div>
+        <div class="label" id="o-bat-info">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Network + Device -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="icon ic-net"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg></div>Network</div>
+      <div class="card-body">
+        <div class="row"><span class="lbl">↑ Upload</span><span class="val" style="color:var(--green)" id="o-nu">0 B/s</span></div>
+        <div class="row"><span class="lbl">↓ Download</span><span class="val" style="color:var(--blue)" id="o-nd">0 B/s</span></div>
+        <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> IP Address</span><span class="val" id="o-ip">N/A</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon ic-dev"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>Device</div>
+      <div class="card-body">
+        <div class="row"><span class="lbl">Model</span><span class="val" id="o-dm">—</span></div>
+        <div class="row"><span class="lbl">Android</span><span class="val" id="o-da">—</span></div>
+        <div class="row"><span class="lbl">Arch</span><span class="val" id="o-dr">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="card">
+    <div class="card-head"><div class="icon ic-proc"><svg class="i" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>Quick Stats</div>
+    <div class="card-body">
+      <div class="g2">
+        <div>
+          <div class="row"><span class="lbl">CPU Cores</span><span class="val" id="o-cc">0</span></div>
+          <div class="row"><span class="lbl">CPU Freq</span><span class="val" id="o-cf">—</span></div>
+          <div class="row"><span class="lbl">Kernel</span><span class="val" id="o-dk">—</span></div>
+          <div class="row"><span class="lbl">Battery Status</span><span class="val" id="o-bst">—</span></div>
+        </div>
+        <div>
+          <div class="row"><span class="lbl">Memory Total</span><span class="val" id="o-mt">—</span></div>
+          <div class="row"><span class="lbl">Storage Free</span><span class="val" id="o-sf">—</span></div>
+          <div class="row"><span class="lbl">Total Sent</span><span class="val" id="o-ts">—</span></div>
+          <div class="row"><span class="lbl">Total Received</span><span class="val" id="o-tr">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ CPU ════════ -->
+<div id="p-cpu" class="page">
+  <div class="card">
+    <div class="card-head"><div class="icon ic-cpu"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div>CPU Usage</div>
+    <div class="card-body">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px">
+        <span style="font-size:2.2rem;font-weight:800;color:var(--accent2)" id="c-pct">0%</span>
+        <span id="c-badge" class="badge badge-green">Normal</span>
+      </div>
+      <div class="progress" style="height:10px"><div class="progress-fill pf-blue" id="c-bar" style="width:0%"></div></div>
+      <div style="height:12px"></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg> Cores</span><span class="val" id="c-cores">0</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg> Model</span><span class="val" id="c-model">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Frequency</span><span class="val" id="c-freq">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Max Frequency</span><span class="val" id="c-fmax">—</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="icon ic-cpu"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>Per-Core Usage</div>
+    <div class="card-body">
+      <div class="cores" id="c-percores"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MEMORY ════════ -->
+<div id="p-memory" class="page">
+  <div class="card">
+    <div class="card-head"><div class="icon ic-mem"><svg class="i" viewBox="0 0 24 24"><path d="M6 19v-9a6 6 0 1 1 12 0v9"/><path d="M6 19h12"/><path d="M12 10v3"/></svg></div>RAM Usage</div>
+    <div class="card-body">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <span style="font-size:2.2rem;font-weight:800;color:var(--accent2)" id="m-pct">0%</span>
+        <span class="badge badge-green" id="m-badge">Normal</span>
+      </div>
+      <div class="label" id="m-sub" style="margin-bottom:8px;color:var(--fg2)">—</div>
+      <div class="progress" style="height:10px"><div class="progress-fill pf-purple" id="m-bar" style="width:0%"></div></div>
+      <div style="height:12px"></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Total</span><span class="val" id="m-total">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5-2.15 3.58-.5 6 .5 8 .54 1.07 1 2.37 1 4a5 5 0 0 1-10 0c0-1.3.76-2.68 1.5-3.5"/></svg> Used</span><span class="val" id="m-used">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Available</span><span class="val" id="m-avail">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg> Cached</span><span class="val" id="m-cache">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Buffers</span><span class="val" id="m-buf">—</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="icon ic-stor"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>Swap</div>
+    <div class="card-body">
+      <div class="row"><span class="lbl">Used</span><span class="val" id="sw-info">—</span></div>
+      <div class="progress"><div class="progress-fill pf-cyan" id="sw-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ STORAGE ════════ -->
+<div id="p-storage" class="page">
+  <div class="card">
+    <div class="card-head"><div class="icon ic-stor"><svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>Storage</div>
+    <div class="card-body">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <span style="font-size:2.2rem;font-weight:800;color:var(--blue)" id="s-pct">0%</span>
+        <span class="badge badge-green" id="s-badge">Normal</span>
+      </div>
+      <div class="progress" style="height:10px"><div class="progress-fill pf-cyan" id="s-bar" style="width:0%"></div></div>
+      <div style="height:12px"></div>
+      <div class="g3" style="text-align:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:1.2rem;font-weight:700;color:var(--fg)" id="s-total">—</div>
+          <div style="font-size:.75rem;color:var(--fg2)">Total</div>
+        </div>
+        <div>
+          <div style="font-size:1.2rem;font-weight:700;color:var(--orange)" id="s-used">—</div>
+          <div style="font-size:.75rem;color:var(--fg2)">Used</div>
+        </div>
+        <div>
+          <div style="font-size:1.2rem;font-weight:700;color:var(--green)" id="s-free">—</div>
+          <div style="font-size:.75rem;color:var(--fg2)">Free</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="icon ic-file"><svg class="i" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>File Explorer</div>
+    <div class="card-body">
+      <div class="fe-toolbar">
+        <div class="fpath" id="fe-path">~</div>
+        <label class="fe-btn" title="Upload files to current folder">
+          <svg class="i" style="width:14px;height:14px" viewBox="0 0 24 24"><line x1="12" y1="16" x2="12" y2="4"/><polyline points="17 9 12 4 7 9"/><path d="M20 21H4"/></svg>
+          Upload
+          <input type="file" id="fe-upload-input" multiple style="display:none" onchange="feUpload(this)">
+        </label>
+      </div>
+      <div class="fe-status" id="fe-status"></div>
+      <ul class="flist" id="fe-list"><li style="color:var(--dim);padding:12px;text-align:center">Loading…</li></ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ BATTERY ════════ -->
+<div id="p-battery" class="page">
+  <div class="card">
+    <div class="card-head"><div class="icon ic-bat"><svg class="i" viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2"/><path d="M23 13v-2"/><path d="M7 12h4M9 10v4"/></svg></div><span id="bt-title">Battery</span></div>
+    <div class="card-body">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <span style="font-size:2.8rem;font-weight:800;color:var(--green)" id="bt-pct">0</span>
+        <span style="font-size:1.2rem;font-weight:400;color:var(--fg2)">%</span>
+        <span class="badge badge-green" id="bt-badge">Good</span>
+      </div>
+      <div class="progress" style="height:12px"><div class="progress-fill pf-green" id="bt-bar" style="width:0%"></div></div>
+      <div style="height:16px"></div>
+      <div class="g2">
+        <div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Status</span><span class="val" id="bt-st">—</span></div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Health</span><span class="val" id="bt-hp">—</span></div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> Temperature</span><span class="val" id="bt-tmp">—</span></div>
+        </div>
+        <div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M19.7 14.8A7.5 7.5 0 0 0 12 2.4 7.5 7.5 0 0 0 4.3 14.8L12 22l7.7-7.2z"/><path d="M12 7v5l3 2"/></svg> Plugged</span><span class="val" id="bt-plug">—</span></div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Current</span><span class="val" id="bt-cur">—</span></div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Remaining</span><span class="val" id="bt-tr">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ NETWORK ════════ -->
+<div id="p-network" class="page">
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="icon ic-bat"><svg class="i" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>Upload</div>
+      <div class="card-body speed-card">
+        <div class="speed-num" style="color:var(--green)" id="n-su">0 B/s</div>
+        <div class="speed-lbl">Current Speed</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon ic-net"><svg class="i" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>Download</div>
+      <div class="card-body speed-card">
+        <div class="speed-num" style="color:var(--blue)" id="n-sd">0 B/s</div>
+        <div class="speed-lbl">Current Speed</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="icon ic-net"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>Connection</div>
+    <div class="card-body">
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> IPv4</span><span class="val" id="n-ip4">—</span></div>
+      <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> IPv6</span><span class="val" id="n-ip6">—</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div class="icon ic-proc"><svg class="i" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>Traffic Stats</div>
+    <div class="card-body">
+      <div class="g2">
+        <div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> Total Sent</span><span class="val" id="n-bs">—</span></div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Total Received</span><span class="val" id="n-br">—</span></div>
+        </div>
+        <div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Packets Sent</span><span class="val" id="n-ps">0</span></div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Packets Recv</span><span class="val" id="n-pr">0</span></div>
+        </div>
+      </div>
+      <div style="height:6px"></div>
+      <div class="g2">
+        <div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Errors In</span><span class="val" id="n-ei">0</span></div>
+        </div>
+        <div>
+          <div class="row"><span class="lbl"><svg class="i" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Errors Out</span><span class="val" id="n-eo">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PROCESSES ════════ -->
+<div id="p-processes" class="page">
+  <!-- Search -->
+  <div class="card">
+    <div class="card-head"><div class="icon ic-proc"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Search Processes</div>
+    <div class="card-body">
+      <div class="search-box">
+        <input type="text" id="proc-search" placeholder="Search process... e.g. python, node, java" autocomplete="off">
+        <button onclick="searchProcs()">Search</button>
+      </div>
+      <div class="search-info">
+        <span id="proc-result-info">Type a keyword and press Search or Enter</span>
+        <span class="tag" id="proc-query-tag" style="display:none"></span>
+      </div>
+      <!-- Quick filter buttons -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="quick-filter" onclick="quickSearch('python')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M12 2C6.48 2 2 4.02 2 6.5V11c0 2.48 4.48 4.5 10 4.5h1V9.5a2.5 2.5 0 0 1 2.5-2.5H20V6.5C20 4.02 17.52 2 12 2z"/><circle cx="8.5" cy="5" r="1" fill="currentColor"/></svg> Python</button>
+        <button class="quick-filter" onclick="quickSearch('node')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/></svg> Node.js</button>
+        <button class="quick-filter" onclick="quickSearch('java')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><path d="M6 8h2v8H6z"/><path d="M10 8h4a2 2 0 0 1 0 4h-4"/><path d="M10 12h4a2 2 0 0 1 0 4h-4"/></svg> Java</button>
+        <button class="quick-filter" onclick="quickSearch('ruby')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg> Ruby</button>
+        <button class="quick-filter" onclick="quickSearch('php')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg> PHP</button>
+        <button class="quick-filter" onclick="quickSearch('go')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><circle cx="12" cy="12" r="6"/></svg> Go</button>
+        <button class="quick-filter" onclick="quickSearch('rust')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/></svg> Rust</button>
+        <button class="quick-filter" onclick="quickSearch('bash')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg> Bash</button>
+        <button class="quick-filter" onclick="quickSearch('')"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg> All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Results -->
+  <div class="card" id="proc-search-results" style="display:none">
+    <div class="card-head"><div class="icon ic-cpu"><svg class="i" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>Search Results<span style="margin-left:auto;font-size:.75rem;color:var(--fg2);font-weight:400" id="proc-search-count">0 found</span></div>
+    <div class="card-body" style="overflow-x:auto;padding:0">
+      <table class="tbl">
+        <thead><tr>
+          <th style="width:55px">PID</th>
+          <th>Name / Command</th>
+          <th class="ar" style="width:60px">CPU%</th>
+          <th class="ar" style="width:60px">MEM%</th>
+          <th style="width:70px">Runtime</th>
+          <th style="width:70px">Status</th>
+        </tr></thead>
+        <tbody id="proc-search-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Processes (auto-update) -->
+  <div class="card">
+    <div class="card-head"><div class="icon ic-proc"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>Top Processes (by CPU)<span style="margin-left:auto;font-size:.75rem;color:var(--fg2);font-weight:400" id="pr-count">0 shown</span></div>
+    <div class="card-body" style="overflow-x:auto;padding:0">
+      <table class="tbl">
+        <thead><tr>
+          <th style="width:60px">PID</th>
+          <th>Name</th>
+          <th class="ar" style="width:70px">CPU %</th>
+          <th class="ar" style="width:70px">MEM %</th>
+          <th style="width:80px">Status</th>
+        </tr></thead>
+        <tbody id="pr-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /body -->
+</div><!-- /main -->
+</div><!-- /wrap -->
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   Dashboard JavaScript
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Tab switching ────────────────────── */
+var tabs = document.querySelectorAll('.tab');
+var pages = document.querySelectorAll('.page');
+tabs.forEach(function(b) {
+  b.addEventListener('click', function() {
+    tabs.forEach(function(t) { t.classList.remove('on'); });
+    pages.forEach(function(p) { p.classList.remove('on'); });
+    b.classList.add('on');
+    var pg = document.getElementById('p-' + b.dataset.t);
+    if (pg) pg.classList.add('on');
+    if (b.dataset.t === 'storage' && !feLoaded) fe();
+  });
+});
+
+/* ── Helpers ──────────────────────────── */
+function $(id) { return document.getElementById(id); }
+function tx(id, v) { var el = $(id); if (el) el.textContent = v; }
+function n(v) { return typeof v === 'number' ? v : 0; }
+
+/* ── File icon SVG map ───────────────── */
+function _fi(d) { return '<svg class="i" viewBox="0 0 24 24">' + d + '</svg>'; }
+var ficons = {
+  dir:   _fi('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
+  code:  _fi('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
+  doc:   _fi('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'),
+  term:  _fi('<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>'),
+  img:   _fi('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'),
+  pkg:   _fi('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'),
+  music: _fi('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
+  video: _fi('<rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>'),
+  web:   _fi('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>')
+};
+
+function barColor(pct) {
+  if (pct >= 90) return 'pf-red';
+  if (pct >= 70) return 'pf-yellow';
+  return 'pf-green';
+}
+
+function badgeFor(pct) {
+  if (pct >= 90) return '<span class="badge badge-red">Critical</span>';
+  if (pct >= 70) return '<span class="badge badge-yellow">Warning</span>';
+  return '<span class="badge badge-green">Normal</span>';
+}
+
+function setBar(id, pct, colorClass) {
+  var el = $(id);
+  if (!el) return;
+  el.style.width = Math.min(pct, 100) + '%';
+  if (!colorClass) {
+    el.className = 'progress-fill ' + barColor(pct);
+  }
+}
+
+/* ── Fetch & Update ──────────────────── */
+function poll() {
+  fetch('/api/status')
+    .then(function(r) { return r.json(); })
+    .then(upd)
+    .catch(function(e) { console.error('Poll error:', e); });
+}
+
+function upd(d) {
+  /* Header */
+  tx('h-date', d.date);
+  tx('h-time', d.time);
+  tx('h-up', d.uptime);
+
+  var c = d.cpu || {}, m = d.memory || {}, s = d.storage || {},
+      b = d.battery || {}, net = d.network || {}, dev = d.device || {};
+
+  var cp = n(c.percent), mp = n(m.percent), sp = n(s.percent), bp = n(b.percentage);
+
+  /* ── Overview ── */
+  tx('o-cpu', cp.toFixed(1));
+  setBar('o-cpu-bar', cp, 'pf-blue');
+  tx('o-cpu-info', (c.count || 0) + ' cores · ' + (c.freq_cur ? c.freq_cur.toFixed(0) + ' MHz' : '—'));
+
+  tx('o-mem', mp.toFixed(1));
+  setBar('o-mem-bar', mp, 'pf-purple');
+  tx('o-mem-info', (m.used_f || '—') + ' / ' + (m.total_f || '—'));
+
+  tx('o-stor', sp.toFixed(1));
+  setBar('o-stor-bar', sp, 'pf-cyan');
+  tx('o-stor-info', (s.used_f || '—') + ' / ' + (s.total_f || '—'));
+
+  tx('o-bat', bp.toFixed(0));
+  setBar('o-bat-bar', bp, 'pf-green');
+  tx('o-bat-info', b.status || 'N/A');
+
+  tx('o-nu', net.su_f || '0 B/s');
+  tx('o-nd', net.sd_f || '0 B/s');
+  tx('o-ip', net.ip || 'N/A');
+
+  tx('o-dm', ((dev.manufacturer || '') + ' ' + (dev.model || '')).trim() || '—');
+  tx('o-da', dev.android ? 'Android ' + dev.android : '—');
+  tx('o-dr', dev.arch || '—');
+
+  tx('o-cc', c.count || 0);
+  tx('o-cf', c.freq_cur ? c.freq_cur.toFixed(0) + ' MHz' : '—');
+  tx('o-dk', dev.kernel || '—');
+  tx('o-bst', b.status || 'N/A');
+  tx('o-mt', m.total_f || '—');
+  tx('o-sf', s.free_f || '—');
+  tx('o-ts', net.bs_f || '—');
+  tx('o-tr', net.br_f || '—');
+
+  /* ── CPU ── */
+  tx('c-pct', cp.toFixed(1) + '%');
+  setBar('c-bar', cp);
+  var cbEl = $('c-badge');
+  if (cbEl) cbEl.outerHTML = badgeFor(cp);
+  tx('c-cores', c.count || 0);
+  tx('c-model', (c.model || 'Unknown').substring(0, 50));
+  tx('c-freq', c.freq_cur ? c.freq_cur.toFixed(0) + ' MHz' : '—');
+  tx('c-fmax', c.freq_max ? c.freq_max.toFixed(0) + ' MHz' : '—');
+
+  var cores = c.per_core || [];
+  var coreHtml = cores.map(function(p, i) {
+    var col = p >= 90 ? 'var(--red)' : p >= 70 ? 'var(--yellow)' : 'var(--green)';
+    return '<div class="core-item">'
+      + '<div class="ci-head"><span>Core ' + i + '</span><span class="ci-pct" style="color:' + col + '">' + p.toFixed(1) + '%</span></div>'
+      + '<div class="progress" style="height:6px"><div class="progress-fill ' + barColor(p) + '" style="width:' + Math.min(p, 100) + '%"></div></div>'
+      + '</div>';
+  }).join('');
+  var cEl = $('c-percores');
+  if (cEl) cEl.innerHTML = coreHtml;
+
+  /* ── Memory ── */
+  tx('m-pct', mp.toFixed(1) + '%');
+  setBar('m-bar', mp);
+  var mbEl = $('m-badge');
+  if (mbEl) mbEl.outerHTML = badgeFor(mp);
+  tx('m-sub', (m.used_f || '—') + ' / ' + (m.total_f || '—'));
+  tx('m-total', m.total_f || '—');
+  tx('m-used', m.used_f || '—');
+  tx('m-avail', m.avail_f || '—');
+  tx('m-cache', m.cache_f || '—');
+  tx('m-buf', m.buf_f || '—');
+
+  var swp = n(m.swap_percent);
+  tx('sw-info', (m.sw_used_f || '—') + ' / ' + (m.sw_total_f || '—'));
+  setBar('sw-bar', swp, 'pf-cyan');
+
+  /* ── Storage ── */
+  tx('s-pct', sp.toFixed(1) + '%');
+  setBar('s-bar', sp);
+  var sbEl = $('s-badge');
+  if (sbEl) sbEl.outerHTML = badgeFor(sp);
+  tx('s-total', s.total_f || '—');
+  tx('s-used', s.used_f || '—');
+  tx('s-free', s.free_f || '—');
+
+  /* ── Battery ── */
+  tx('bt-pct', bp.toFixed(0));
+  setBar('bt-bar', bp, 'pf-green');
+  var chg = (b.status || '').toUpperCase().indexOf('CHARG') >= 0;
+  tx('bt-title', (chg ? 'Charging' : 'Battery'));
+  var btBadge = $('bt-badge');
+  if (btBadge) {
+    if (bp >= 80) btBadge.outerHTML = '<span class="badge badge-green" id="bt-badge">Good</span>';
+    else if (bp >= 30) btBadge.outerHTML = '<span class="badge badge-yellow" id="bt-badge">Medium</span>';
+    else btBadge.outerHTML = '<span class="badge badge-red" id="bt-badge">Low</span>';
+  }
+  tx('bt-st', b.status || 'N/A');
+  tx('bt-hp', b.health || 'N/A');
+  tx('bt-tmp', b.temperature ? b.temperature.toFixed(1) + '°C' : 'N/A');
+  tx('bt-plug', b.plugged || 'N/A');
+  tx('bt-cur', b.current ? b.current + ' µA' : 'N/A');
+  tx('bt-tr', b.time_remaining || 'N/A');
+
+  /* ── Network ── */
+  tx('n-su', net.su_f || '0 B/s');
+  tx('n-sd', net.sd_f || '0 B/s');
+  tx('n-ip4', net.ip || 'N/A');
+  tx('n-ip6', (net.ip6 || 'N/A').substring(0, 42));
+  tx('n-bs', net.bs_f || '—');
+  tx('n-br', net.br_f || '—');
+  tx('n-ps', (net.ps || 0).toLocaleString());
+  tx('n-pr', (net.pr || 0).toLocaleString());
+  tx('n-ei', net.ei || 0);
+  tx('n-eo', net.eo || 0);
+
+  /* ── Processes ── */
+  var procs = d.processes || [];
+  tx('pr-count', procs.length + ' shown');
+  var prHtml = procs.map(function(p) {
+    var cpuCol = p.cpu >= 50 ? 'color:var(--red)' : p.cpu >= 20 ? 'color:var(--yellow)' : '';
+    var stBadge = p.st === 'running'
+      ? '<span class="badge badge-green">running</span>'
+      : '<span class="badge badge-yellow">' + (p.st || '—') + '</span>';
+    return '<tr>'
+      + '<td style="color:var(--fg2)">' + p.pid + '</td>'
+      + '<td style="font-weight:500">' + (p.name || '—').substring(0, 28) + '</td>'
+      + '<td class="ar" style="' + cpuCol + ';font-weight:600">' + p.cpu.toFixed(1) + '</td>'
+      + '<td class="ar">' + p.mem.toFixed(1) + '</td>'
+      + '<td>' + stBadge + '</td>'
+      + '</tr>';
+  }).join('');
+  var prBody = $('pr-body');
+  if (prBody) prBody.innerHTML = prHtml;
+}
+/* ── Process Search ──────────────────── */
+var lastProcQuery = '';
+function searchProcs(query) {
+  var q = (typeof query === 'string') ? query : ($('proc-search') ? $('proc-search').value : '');
+  lastProcQuery = q;
+  var url = '/api/processes' + (q ? '?q=' + encodeURIComponent(q) : '');
+  fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+    var card = $('proc-search-results');
+    if (card) card.style.display = 'block';
+    tx('proc-search-count', d.count + ' found');
+    var tag = $('proc-query-tag');
+    if (tag) {
+      if (d.query) {
+        tag.style.display = 'inline';
+        tag.textContent = '\uD83D\uDD0D ' + d.query;
+      } else {
+        tag.style.display = 'none';
+      }
+    }
+    tx('proc-result-info', d.count + ' process' + (d.count !== 1 ? 'es' : '') + ' found' + (d.query ? ' matching "' + d.query + '"' : ''));
+    var body = $('proc-search-body');
+    if (!body) return;
+    body.innerHTML = d.processes.map(function(p) {
+      var cpuCol = p.cpu >= 50 ? 'color:var(--red)' : p.cpu >= 20 ? 'color:var(--yellow)' : '';
+      var stBadge = p.st === 'running'
+        ? '<span class="badge badge-green">running</span>'
+        : '<span class="badge badge-yellow">' + (p.st || '\u2014') + '</span>';
+      var nameHtml = '<div style="font-weight:600">' + esc(p.name || '\u2014') + '</div>'
+        + '<div class="cmd-cell" title="' + esc(p.cmd || '') + '">' + esc(p.cmd || '\u2014') + '</div>';
+      return '<tr>'
+        + '<td style="color:var(--fg2)">' + p.pid + '</td>'
+        + '<td>' + nameHtml + '</td>'
+        + '<td class="ar" style="' + cpuCol + ';font-weight:600">' + p.cpu.toFixed(1) + '</td>'
+        + '<td class="ar">' + p.mem.toFixed(1) + '</td>'
+        + '<td><span class="runtime-badge">' + (p.runtime || 'N/A') + '</span></td>'
+        + '<td>' + stBadge + '</td>'
+        + '</tr>';
+    }).join('');
+  }).catch(function(e) { console.error('Process search error:', e); });
+}
+
+function quickSearch(q) {
+  var input = $('proc-search');
+  if (input) input.value = q;
+  searchProcs(q);
+}
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* Enter key on search input */
+var procInput = $('proc-search');
+if (procInput) {
+  procInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') searchProcs();
+  });
+}
+/* ── File Explorer ───────────────────── */
+var feLoaded = false;
+function fe(path) {
+  var u = path ? '/api/browse?path=' + encodeURIComponent(path) : '/api/browse';
+  fetch(u).then(function(r) { return r.json(); }).then(function(d) {
+    tx('fe-path', d.path || '/');
+    var ul = $('fe-list');
+    if (!ul) return;
+    ul.innerHTML = (d.items || []).map(function(it) {
+      var esc = it.p.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      var click = it.d ? "fe('" + esc + "')" : "dlFile('" + esc + "')";
+      var ic = ficons[it.d ? 'dir' : (it.i || 'doc')] || ficons.doc;
+      var cls = it.d ? '' : ' is-file';
+      return '<li class="' + cls + '" onclick="' + click + '">'
+        + '<span class="ficon">' + ic + '</span>'
+        + '<span class="fname">' + it.n + '</span>'
+        + '<span class="fsz">' + (it.d ? (it.n === '..' ? '' : 'folder') : it.sf) + '</span>'
+        + '</li>';
+    }).join('');
+    feLoaded = true;
+  }).catch(function(e) { console.error(e); });
+}
+
+function dlFile(path) {
+  window.location.href = '/api/download?path=' + encodeURIComponent(path);
+}
+
+function feUpload(input) {
+  if (!input.files.length) return;
+  var path = ($('fe-path') || {}).textContent || '/';
+  var st = $('fe-status');
+  var fd = new FormData();
+  Array.from(input.files).forEach(function(f) { fd.append('file', f); });
+  st.className = 'fe-status uploading';
+  st.textContent = 'Uploading ' + input.files.length + ' file(s)…';
+  fetch('/api/upload?path=' + encodeURIComponent(path), {method: 'POST', body: fd})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        st.className = 'fe-status err';
+        st.textContent = 'Error: ' + data.error;
+      } else {
+        st.className = 'fe-status ok';
+        st.textContent = 'Uploaded ' + data.count + ' file(s): ' + (data.saved || []).join(', ');
+        fe(path);
+      }
+      setTimeout(function() { st.className = 'fe-status'; }, 4000);
+    })
+    .catch(function() {
+      st.className = 'fe-status err';
+      st.textContent = 'Upload failed';
+    });
+  input.value = '';
+}
+
+/* ── Keyboard navigation ─────────────── */
+document.addEventListener('keydown', function(e) {
+  var tabArr = Array.from(tabs);
+  var idx = tabArr.findIndex(function(t) { return t.classList.contains('on'); });
+  if (e.key === 'ArrowDown' || e.key === 'j') {
+    e.preventDefault();
+    tabArr[(idx + 1) % tabArr.length].click();
+  } else if (e.key === 'ArrowUp' || e.key === 'k') {
+    e.preventDefault();
+    tabArr[(idx - 1 + tabArr.length) % tabArr.length].click();
+  }
+});
+
+/* ── Start ────────────────────────────── */
+poll();
+setInterval(poll, 1500);
+</script>
+</body>
+</html>
