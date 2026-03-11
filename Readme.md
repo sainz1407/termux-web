@@ -3,19 +3,14 @@
 A modern web-based system dashboard for monitoring your Android device in Termux.  
 Built with **Go** — single binary, zero dependencies, runs directly in Termux.
 
-> **Original TUI version (Python):**
-> ```bash
-> curl -O https://raw.githubusercontent.com/AhmarZaidi/termux-status/main/status.py
-> chmod +x status.py
-> python status.py
-> ```
+Original Termux status version [Source](https://github.com/AhmarZaidi/termux-status)
 
 ## Screenshots
 
 ![screenshot](Screenshot-2026-03-11-223357.png)
 
 ![screenshot](Screenshot-2026-03-11-223431.png)
-
+=======
 ## Features
 
 - **Overview** — At-a-glance stat cards for CPU, memory, storage, battery, and network
