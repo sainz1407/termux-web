@@ -10,17 +10,22 @@ Built with **Go** — single binary, zero dependencies, runs directly in Termux.
 > python status.py
 > ```
 
-<img width="940" height="587" alt="Screenshot 2026-01-14 at 4 26 45 PM" src="https://github.com/user-attachments/assets/62af69f5-a6e7-4bd5-b0d3-4c7d2c681de4" />
+## Screenshots
+
+![screenshot](Screenshot-2026-03-11-223357.png)
+
+![screenshot](Screenshot-2026-03-11-223431.png)
 
 ## Features
 
-- **System Overview** — At-a-glance view of CPU, memory, storage, battery, and network
-- **CPU Details** — Real-time usage, per-core frequencies, and processor info
-- **Memory Stats** — RAM and swap usage with detailed breakdowns
-- **Storage Browser** — Interactive file explorer with upload & download support
-- **Battery Monitor** — Charge level, health, temperature, and time remaining
-- **Network Info** — Real-time upload/download speeds, IP addresses, and packet stats
-- **Process Manager** — Search and filter processes by name, top CPU consumers
+- **Overview** — At-a-glance stat cards for CPU, memory, storage, battery, and network
+- **CPU** — Real-time overall & per-core usage, per-core frequencies, and processor model
+- **Memory** — RAM and swap usage with buffers/cache breakdown
+- **Storage** — Interactive file browser with upload & download support
+- **Battery** — Charge percentage, status, health, temperature, current, and time remaining
+- **Network** — Real-time upload/download speeds, IPv4/IPv6 addresses, and packet stats
+- **Processes** — Search and filter by name, top CPU consumers, auto-refreshed every 1 s
+- **Device Info** — Model, manufacturer, Android version, architecture, SDK level, and kernel
 - **Custom SVG Icons** — Clean Lucide-inspired icons throughout the UI
 
 ## Installation
@@ -36,44 +41,65 @@ pkg install golang
 
 ```bash
 git clone https://github.com/sainz1407/termux-status-web.git
-cd termux-status
+cd termux-status-web
 go build -o monitor .
 ```
 
-### Or cross-compile on desktop (Linux ARM64 / Termux)
+The `templates/` directory must remain next to the `monitor` binary when running.
+
+### Cross-compile on desktop (for Linux ARM64 / Termux)
 
 ```bash
 GOOS=linux GOARCH=arm64 go build -o monitor .
 ```
 
-Then copy the `monitor` binary to your Termux device.
+Copy both the `monitor` binary and the `templates/` folder to your Termux device.
 
 ## Usage
 
 ```bash
 ./monitor
-# or specify a custom port
+# Custom port
 ./monitor --port 9090
+# Custom bind address
+./monitor --host 127.0.0.1 --port 8080
 ```
 
-Open your browser at `http://localhost:8080` (or the port you chose).
+Open your browser at `http://localhost:8080` (or the host/port you chose).
 
-### File Explorer
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--port` | `8080` | HTTP listen port |
+| `--host` | `0.0.0.0` | Bind address |
 
-- **Browse** — tap folders to navigate
+### File Explorer (Storage tab)
+
+- **Browse** — tap folders to navigate the file system
 - **Download** — tap any file to download it to your device
-- **Upload** — use the Upload button to send files into the current folder
+- **Upload** — use the Upload button to send files into the current directory
 
-### Process Manager
+### Process Manager (Processes tab)
 
-- Search by process name (e.g. `python`, `node`, `bash`)
+- Search processes by name (e.g. `python`, `node`, `bash`)
 - Quick-filter buttons for common runtimes
-- Top-10 processes by CPU usage, auto-refreshed every 1.5 s
+- Top-10 processes by CPU usage, refreshed every 1 s
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | Serves the dashboard UI |
+| `GET /api/status` | Full system snapshot (JSON) |
+| `GET /api/browse?path=<dir>` | Directory listing |
+| `GET /api/download?path=<file>` | Download a file |
+| `POST /api/upload?path=<dir>` | Upload files (multipart) |
+| `GET /api/processes?q=<name>` | Search/list processes |
+| `GET /api/debug` | Go runtime diagnostics |
 
 ## Requirements
 
 - **Android** with [Termux](https://termux.dev) installed
-- **Go 1.21+** (only needed to build)
+- **Go 1.25+** (only needed to build from source)
 - **Termux API** (optional, for battery info): `pkg install termux-api`
 
 ## Troubleshooting
@@ -91,11 +117,13 @@ Some `/proc` files may not be accessible. The monitor handles these gracefully a
 ./monitor --port 9090
 ```
 
+**Templates not found:**  
+Make sure the `templates/` folder is in the same directory as the `monitor` binary.
+
 ## License
 
 MIT License — feel free to use and modify!
 
 ## Contributing
 
-Issues and pull requests welcome [here](https://github.com/sainz1407/termux-status/issues)
-# termux-web
+Issues and pull requests welcome [here](https://github.com/sainz1407/termux-web/issues)
