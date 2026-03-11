@@ -10,7 +10,7 @@ Built with **Go** — single binary, zero dependencies, runs directly in Termux.
 > python status.py
 > ```
 
-<img width="940" height="587" alt="Screenshot 2026-01-14 at 4 26 45 PM" src="https://github.com/user-attachments/assets/62af69f5-a6e7-4bd5-b0d3-4c7d2c681de4" />
+<img width="940" height="587" alt="Screenshot 2026-01-14 at 4 26 45 PM" src="[https://github.com/user-attachments/assets/62af69f5-a6e7-4bd5-b0d3-4c7d2c681de4](https://github.com/sainz1407/termux-web/blob/a119d89d354ee1d22245a909fb48b8b8fa2b3d12/Screenshot%202026-03-11%20223357.png)" />
 
 ## Features
 
